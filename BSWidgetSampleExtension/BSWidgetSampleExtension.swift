@@ -43,6 +43,11 @@ struct SimpleEntry: TimelineEntry {
 
 struct BSWidgetSampleExtensionEntryView : View {
     var entry: Provider.Entry
+    @Environment(\.widgetFamily) var widgetFamily
+    @Environment(\.colorScheme) var colorScheme
+    @Environment(\.displayScale) var displayScale
+    @Environment(\.sizeCategory) var sizeCategory
+    @Environment(\.widgetRenderingMode) var widgetRenderingMode
 
     var body: some View {
         GeometryReader { geometry in
@@ -56,7 +61,7 @@ struct BSWidgetSampleExtensionEntryView : View {
                     .fontWeight(.bold)
                     .foregroundColor(sizeCategory == "Small" ? .orange : .blue)
                     .frame(maxWidth: .infinity)
-                
+        
                 Divider()
                 
                 // Secondary content
@@ -88,6 +93,33 @@ struct BSWidgetSampleExtensionEntryView : View {
             }
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .onAppear {
+                // Check if widget text actually changed (ONLY ONCE)
+                let currentText = sizeCategory
+                let lastText = UserDefaults.standard.string(forKey: "lastWidgetText") ?? ""
+                
+                if currentText != lastText {
+                    print("📝 Widget Text Changed: '\(lastText)' → '\(currentText)'")
+                    UserDefaults.standard.set(currentText, forKey: "lastWidgetText")
+                }
+                
+                print("🎯 Widget Size Detection: \(sizeCategory)")
+                print("📏 Dimensions: \(Int(widgetSize.width)) × \(Int(widgetSize.height))")
+                print("📊 Area: \(Int(widgetSize.width * widgetSize.height))")
+                print("🔧 Widget Properties:")
+                print("   • Widget Family: \(widgetFamily)")
+                print("   • Color Scheme: \(colorScheme)")
+                print("   • Display Scale: \(displayScale)")
+                print("   • Size Category: \(sizeCategory)")
+                print("   • Rendering Mode: \(widgetRenderingMode)")
+                print("   • Entry Date: \(entry.date)")
+                print("   • Entry Config: \(entry.configuration.favoriteEmoji)")
+                
+                // Log geometry frame info
+                print("🖼️ Geometry Info:")
+                print("   • Safe Area: \(geometry.safeAreaInsets)")
+                print("   • Frame: \(geometry.frame(in: .local))")
+            }
         }
     }
     
@@ -98,8 +130,10 @@ struct BSWidgetSampleExtensionEntryView : View {
         let area = width * height
         
         if area < 40000 {
+            print("determineSizeCategory -> Small")
             return "Small"
         } else {
+            print("determineSizeCategory -> Large")
             return "Large"
         }
     }
@@ -107,6 +141,11 @@ struct BSWidgetSampleExtensionEntryView : View {
     // Function to get the most reliable current user setting
     static func getCurrentHomeScreenSetting() -> String {
         return UserDefaults.standard.string(forKey: "currentSizeSetting") ?? "Unknown"
+    }
+    
+    // Function to get the current widget text being displayed
+    static func getCurrentWidgetText() -> String {
+        return UserDefaults.standard.string(forKey: "lastWidgetText") ?? "Unknown"
     }
 }
 
