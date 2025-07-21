@@ -49,38 +49,45 @@ struct BSWidgetSampleExtensionEntryView : View {
             let widgetSize = geometry.size
             let sizeCategory = determineSizeCategory(width: widgetSize.width, height: widgetSize.height)
             
-            VStack {
-                Text("Time:")
-                Text(entry.date, style: .time)
-
-                Text("Favorite Emoji:")
-                Text(entry.configuration.favoriteEmoji)
+            VStack(spacing: 12) {
+                // Main size indicator - prominently displayed
+                Text(sizeCategory)
+                    .font(.largeTitle)
+                    .fontWeight(.bold)
+                    .foregroundColor(sizeCategory == "Small" ? .orange : .blue)
+                    .frame(maxWidth: .infinity)
                 
-                // Display size information for testing
-                VStack {
-                    Text("Size: \(Int(widgetSize.width))×\(Int(widgetSize.height))")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
-                    Text("Home Screen: \(sizeCategory)")
-                        .font(.caption2)
-                        .foregroundColor(.secondary)
+                Divider()
+                
+                // Secondary content
+                HStack {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("Time")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(entry.date, style: .time)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                    }
+                    
+                    Spacer()
+                    
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Text("Emoji")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        Text(entry.configuration.favoriteEmoji)
+                            .font(.title2)
+                    }
                 }
+                
+                // Debug dimensions (small)
+                Text("\(Int(widgetSize.width)) × \(Int(widgetSize.height))")
+                    .font(.caption2)
+                    .foregroundColor(.gray)
             }
-            .onAppear {
-                let currentTime = Date().timeIntervalSince1970
-                let area = widgetSize.width * widgetSize.height
-                
-                // Store the most recent size measurement with timestamp
-                UserDefaults.standard.set(area, forKey: "currentWidgetArea")
-                UserDefaults.standard.set(currentTime, forKey: "lastMeasurementTime")
-                UserDefaults.standard.set(sizeCategory, forKey: "currentSizeSetting")
-                
-                print("📱 Widget rendered: \(Int(widgetSize.width))×\(Int(widgetSize.height)) (\(sizeCategory)) at \(Date())")
-                
-                // Show the current stored setting
-                let storedSetting = UserDefaults.standard.string(forKey: "currentSizeSetting") ?? "Unknown"
-                print("🎯 Current user setting: \(storedSetting)")
-            }
+            .padding()
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
     }
     
@@ -133,6 +140,6 @@ extension ConfigurationAppIntent {
 #Preview("Widget Preview", as: .systemMedium) {
     BSWidgetSampleExtension()
 } timeline: {
-    SimpleEntry(date: .now, configuration: ConfigurationAppIntent.smiley)
-    SimpleEntry(date: .now, configuration: ConfigurationAppIntent.starEyes)
+    SimpleEntry(date: .now, configuration: .smiley)
+    SimpleEntry(date: .now, configuration: .starEyes)
 }
