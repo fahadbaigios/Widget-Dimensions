@@ -7,7 +7,6 @@
 
 import WidgetKit
 import SwiftUI
-import AppIntents
 
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
@@ -95,95 +94,50 @@ struct BSWidgetSampleExtensionEntryView : View {
             .padding()
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .onAppear {
-                // Enhanced frame change detection
+                // Debounce mechanism to prevent multiple rapid calls
                 let currentText = sizeCategory
                 let lastText = UserDefaults.standard.string(forKey: "lastWidgetText") ?? ""
-                let lastWidth = UserDefaults.standard.double(forKey: "lastWidgetWidth")
-                let lastHeight = UserDefaults.standard.double(forKey: "lastWidgetHeight")
+                let lastChangeTime = UserDefaults.standard.object(forKey: "lastChangeTime") as? Date ?? Date.distantPast
+                let now = Date()
                 
-                // Detect if size actually changed
-                let sizeChanged = abs(widgetSize.width - lastWidth) > 1.0 || abs(widgetSize.height - lastHeight) > 1.0
-                
-                if currentText != lastText || sizeChanged {
-                    print("🚨 WIDGET SIZE CHANGE DETECTED!")
-                    print("   📝 Text: '\(lastText)' → '\(currentText)'")
-                    print("   📏 Size: \(Int(lastWidth))×\(Int(lastHeight)) → \(Int(widgetSize.width))×\(Int(widgetSize.height))")
-                    print("   🔄 Change Timestamp: \(Date())")
-                    
-                    // Store new values
+                // Only log if text changed AND enough time has passed (debounce)
+                if currentText != lastText && now.timeIntervalSince(lastChangeTime) > 2.0 {
+                    print("📝 Widget Size Changed: \(currentText)")
                     UserDefaults.standard.set(currentText, forKey: "lastWidgetText")
-                    UserDefaults.standard.set(Double(widgetSize.width), forKey: "lastWidgetWidth")
-                    UserDefaults.standard.set(Double(widgetSize.height), forKey: "lastWidgetHeight")
-                    UserDefaults.standard.set(Date(), forKey: "lastWidgetChangeTime")
+                    UserDefaults.standard.set(now, forKey: "lastChangeTime")
                 }
                 
-                print("🎯 Current Widget State:")
-                print("   📱 Category: \(sizeCategory)")
-                print("   📏 Dimensions: \(Int(widgetSize.width)) × \(Int(widgetSize.height))")
-                print("   📊 Area: \(Int(widgetSize.width * widgetSize.height))")
-                print("   🏗️ Widget Family: \(widgetFamily)")
-                print("   🎨 Color Scheme: \(colorScheme)")
-                print("   📈 Display Scale: \(displayScale)")
-                print("   🔧 Rendering Mode: \(widgetRenderingMode)")
-                print("   📅 Entry Date: \(entry.date)")
-                print("   😀 Config Emoji: \(entry.configuration.favoriteEmoji)")
+                print("🎯 Widget Size Detection: \(sizeCategory)")
+                print("📏 Dimensions: \(Int(widgetSize.width)) × \(Int(widgetSize.height))")
+                print("📊 Area: \(Int(widgetSize.width * widgetSize.height))")
+                print("🔧 Widget Properties:")
+                print("   • Widget Family: \(widgetFamily)")
+                print("   • Color Scheme: \(colorScheme)")
+                print("   • Display Scale: \(displayScale)")
+                print("   • Size Category: \(sizeCategory)")
+                print("   • Rendering Mode: \(widgetRenderingMode)")
+                print("   • Entry Date: \(entry.date)")
+                print("   • Entry Config: \(entry.configuration.favoriteEmoji)")
                 
-                // Enhanced geometry logging
-                print("🖼️ Detailed Geometry:")
-                print("   📐 Safe Area: \(geometry.safeAreaInsets)")
-                print("   🖥️ Local Frame: \(geometry.frame(in: .local))")
-                print("   🌍 Global Frame: \(geometry.frame(in: .global))")
-                
-                // Environment detection
-                print("🌐 Environment Context:")
-                print("   📏 Size Category: \(sizeCategory)")
-                print("   🎭 Interface Style: \(colorScheme == .dark ? "Dark" : "Light")")
-                
-                print("═══════════════════════════════════════")
+                // Log geometry frame info
+                print("🖼️ Geometry Info:")
+                print("   • Safe Area: \(geometry.safeAreaInsets)")
+                print("   • Frame: \(geometry.frame(in: .local))")
             }
         }
     }
     
     private func determineSizeCategory(width: CGFloat, height: CGFloat) -> String {
-        // More reliable detection based on widget family and actual dimensions
-        // Use both absolute size and aspect ratio for better accuracy
-        
+        // Based on actual measurements:
+        // Large: 317×133 = 42,161 area
+        // Small: 306×126 = 38,556 area
         let area = width * height
-        let aspectRatio = width / height
         
-        print("🔍 Size Detection Debug:")
-        print("   • Width: \(width), Height: \(height)")
-        print("   • Area: \(area)")
-        print("   • Aspect Ratio: \(aspectRatio)")
-        
-        // Enhanced detection logic:
-        // Small icons typically have smaller widget dimensions
-        // Large icons typically have larger widget dimensions
-        
-        // Method 1: Area-based detection with dynamic thresholds
-        if area < 39000 {
-            print("   • Detection Method: Area < 39000 → Small")
-            return "Small"
-        } else if area > 41000 {
-            print("   • Detection Method: Area > 41000 → Large")
-            return "Large"
-        }
-        
-        // Method 2: Width-based detection (more reliable)
-        if width < 310 {
-            print("   • Detection Method: Width < 310 → Small")
-            return "Small"
-        } else if width > 315 {
-            print("   • Detection Method: Width > 315 → Large")  
-            return "Large"
-        }
-        
-        // Method 3: Height-based detection as fallback
-        if height < 130 {
-            print("   • Detection Method: Height < 130 → Small")
+        if area < 40000 {
+            print("determineSizeCategory -> Small")
             return "Small"
         } else {
-            print("   • Detection Method: Height >= 130 → Large")
+            print("determineSizeCategory -> Large")
             return "Large"
         }
     }
@@ -206,6 +160,7 @@ struct BSWidgetSampleExtension: Widget {
         AppIntentConfiguration(kind: kind, intent: ConfigurationAppIntent.self, provider: Provider()) { entry in
             BSWidgetSampleExtensionEntryView(entry: entry)
                 .containerBackground(.fill.tertiary, for: .widget)
+            
         }
         .supportedFamilies([.systemMedium])
     }
@@ -228,6 +183,6 @@ extension ConfigurationAppIntent {
 #Preview("Widget Preview", as: .systemMedium) {
     BSWidgetSampleExtension()
 } timeline: {
-    SimpleEntry(date: Date.now, configuration: .smiley)
-    SimpleEntry(date: Date.now, configuration: .starEyes)
+    SimpleEntry(date: .now, configuration: .smiley)
+    SimpleEntry(date: .now, configuration: .starEyes)
 }
